@@ -1,0 +1,60 @@
+configure terminal
+ip access-list extended ACL_NAT_INTERNET
+ 1 deny ip 172.16.1.0 0.0.0.255 172.16.2.0 0.0.0.255
+exit
+crypto isakmp policy 10
+ encr aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 86400
+exit
+crypto isakmp key CLAVE_SECRETA_VPN address 10.0.0.70
+crypto ipsec transform-set TS_GRE esp-aes 256 esp-sha256-hmac
+ mode transport
+exit
+crypto ipsec profile PROFILE_GRE
+ set transform-set TS_GRE
+exit
+interface Tunnel0
+ ip address 192.168.100.1 255.255.255.252
+ tunnel source GigabitEthernet0/0
+ tunnel destination 10.0.0.70
+ tunnel protection ipsec profile PROFILE_GRE
+ no shutdown
+exit
+no ip route 172.16.2.0 255.255.255.0 10.0.0.70
+ip route 172.16.2.0 255.255.255.0 Tunnel0
+end
+write
+
+
+configure terminal
+ip access-list extended ACL_NAT_INTERNET
+ 1 deny ip 172.16.2.0 0.0.0.255 172.16.1.0 0.0.0.255
+exit
+crypto isakmp policy 10
+ encr aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 86400
+exit
+crypto isakmp key CLAVE_SECRETA_VPN address 10.0.0.60
+crypto ipsec transform-set TS_GRE esp-aes 256 esp-sha256-hmac
+ mode transport
+exit
+crypto ipsec profile PROFILE_GRE
+ set transform-set TS_GRE
+exit
+interface Tunnel0
+ ip address 192.168.100.2 255.255.255.252
+ tunnel source GigabitEthernet0/0
+ tunnel destination 10.0.0.60
+ tunnel protection ipsec profile PROFILE_GRE
+ no shutdown
+exit
+no ip route 172.16.1.0 255.255.255.0 10.0.0.60
+ip route 172.16.1.0 255.255.255.0 Tunnel0
+end
+write
